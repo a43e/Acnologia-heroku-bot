@@ -8,4 +8,143 @@ client.on("ready", () => {
   client.user.setGame(`Eu estou em ${client.guilds.size} servidores`);
 });
 
-client.loguin(process.env.BOT_TOKEN);
+client.on("guildCreate", guild => {
+    console.log(`O bot entrou nos servidores: ${guild.name} (id: ${guild.id}). População: ${guild.memberCount} membros!`);
+    client,user.setActivity(`Estou em ${client.guilds.size} servidores`);
+});
+
+client.on("guildDelete", guild => {
+    console.log(`O bot foi removido do servidor: ${guild.name} (id: ${guild.id})`);
+    client.user.setActivity(`Serving ${client.guilds.size} servers`);
+});
+
+client.on("message", async message => {
+    if(message.author.bot) return;
+    if(message.channel.type === "dm") return;
+
+
+    const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
+    const comando = args.shift().toLowerCase();
+
+
+  if(comando === "ping") {
+      const m = await message.channel.send("ping?");
+      m.edit(`Pong! A Latência é ${m.createdTimestamp - message.createdTimestamp}ms. A Latencia da API é ${Math.round(client.ping)}ms`);
+  }
+
+  //comando falar
+  if(comando === "say") { 
+    const sayMessage = args.join(" ");
+    message.delete().catch(O_o=>{});  
+    message.channel.send(sayMessage);
+  }
+//comando apagar
+  if(comando === "apagar") {
+    const deleteCount = parseInt(args[0], 10);
+    if(!deleteCount || deleteCount < 2 || deleteCount > 100)
+      return message.reply("Por favor, forneça um número entre 2 e 100 para o número de mensagens a serem excluídas");
+    
+    const fetched = await message.channel.fetchMessages({limit: deleteCount});
+    message.channel.bulkDelete(fetched)
+      .catch(error => message.reply(`Não foi possível deletar mensagens devido a: ${error}`));
+  }
+  
+  // comando chutar 
+  if(comando === "kick") {
+    //adicione o nome dos cargos que vc quer que use esse comando!
+        if(!message.member.roles.some(r=>["OWNER", "Nome de outro cargo 2"].includes(r.name)) )
+          return message.reply("Desculpe, você não tem permissão para usar isto!");
+        let member = message.mentions.members.first() || message.guild.members.get(args[0]);
+        if(!member)
+          return message.reply("Por favor mencione um membro válido deste servidor");
+        if(!member.kickable) 
+          return message.reply("Eu não posso expulsar este usuário! Eles pode ter um cargo mais alto ou eu não tenho permissões de expulsar?");
+        
+        let reason = args.slice(1).join(' ');
+        if(!reason) reason = "Nenhuma razão fornecida";
+        
+        await member.kick(reason)
+          .catch(error => message.reply(`Desculpe ${message.author} não consegui expulsar o membro devido o: ${error}`));
+        message.reply(`${member.user.tag} foi kickado por ${message.author.tag} Motivo: ${reason}`);
+    
+      }
+      // comando ban
+  if(comando === "ban") {
+    //adicione o nome do cargo que vc quer que use esse comando!
+    if(!message.member.roles.some(r=>["OWNER"].includes(r.name)) )
+      return message.reply("Desculpe, você não tem permissão para usar isto!");
+    let member = message.mentions.members.first();
+    if(!member)
+      return message.reply("Por favor mencione um membro válido deste servidor");
+    if(!member.bannable) 
+      return message.reply("Eu não posso banir este usuário! Eles pode ter um cargo mais alto ou eu não tenho permissões de banir?");
+    let reason = args.slice(1).join(' ');
+    if(!reason) reason = "Nenhuma razão fornecida";
+    await member.ban(reason)
+      .catch(error => message.reply(`Desculpe ${message.author} não consegui banir o membro devido o : ${error}`));
+    message.reply(`${member.user.tag} foi banido por ${message.author.tag} Motivo: ${reason}`);
+  }
+
+  if(cmd === `${prefix}report`){
+
+    //!report @ned this is the reason
+
+    let rUser = message.guild.member(message.mentions.users.first() || message.guild.members.get(args[0]));
+    if(!rUser) return message.channel.send("Couldn't find user.");
+    let rreason = args.join(" ").slice(22);
+
+    let reportEmbed = new Discord.RichEmbed()
+    .setDescription("Reports")
+    .setColor("#15f153")
+    .addField("Reported User", `${rUser} with ID: ${rUser.id}`)
+    .addField("Reported By", `${message.author} with ID: ${message.author.id}`)
+    .addField("Channel", message.channel)
+    .addField("Time", message.createdAt)
+    .addField("Reason", rreason);
+
+    let reportschannel = message.guild.channels.find(`name`, "reports");
+    if(!reportschannel) return message.channel.send("Couldn't find reports channel.");
+
+
+    message.delete().catch(O_o=>{});
+    reportschannel.send(reportEmbed);
+
+    return;
+  }
+
+
+
+
+  if(cmd === `${prefix}serverinfo`){
+
+    let sicon = message.guild.iconURL;
+    let serverembed = new Discord.RichEmbed()
+    .setDescription("Server Information")
+    .setColor("#15f153")
+    .setThumbnail(sicon)
+    .addField("Server Name", message.guild.name)
+    .addField("Created On", message.guild.createdAt)
+    .addField("You Joined", message.member.joinedAt)
+    .addField("Total Members", message.guild.memberCount);
+
+    return message.channel.send(serverembed);
+  }
+
+
+
+  if(cmd === `${prefix}botinfo`){
+
+    let bicon = bot.user.displayAvatarURL;
+    let botembed = new Discord.RichEmbed()
+    .setDescription("Bot Information")
+    .setColor("#15f153")
+    .setThumbnail(bicon)
+    .addField("Bot Name", bot.user.username)
+    .addField("Created On", bot.user.createdAt);
+
+    return message.channel.send(botembed);
+  }
+
+});
+
+client.login(config.token);
