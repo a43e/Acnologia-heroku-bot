@@ -1,1 +1,1 @@
-worker: node bote.js Acnologia
+worker: node bote.js Seals
